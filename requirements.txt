@@ -1,0 +1,10 @@
+flask
+flask_sqlalchemy
+psycopg2-binary
+flask-bcrypt
+flask-jwt-extended
+elasticsearch
+requests
+streamlit
+werkzeug
+gunicorn
