@@ -12,3 +12,7 @@ ELASTICSEARCH_PASSWORD = "-LW6SeWxa*7EfzBDpxNU"
 
 # Clé secrète pour Flask
 SECRET_KEY = "my_super_secret_key"
+
+#upload file
+UPLOAD_FOLDER = "uploads/"
+ALLOWED_EXTENSIONS = {"pdf", "docx"}

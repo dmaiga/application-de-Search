@@ -25,6 +25,11 @@ def create_app():
      # Initialisation de la base de données
     db.init_app(app)
     bcrypt= Bcrypt(app)
+    # Connexion à Elasticsearch
+    es = Elasticsearch(
+    ELASTICSEARCH_URL,
+    basic_auth=(ELASTICSEARCH_USER, ELASTICSEARCH_PASSWORD)
+        )
 
     # Configuration de Flask-Login
     login_manager= LoginManager()
@@ -32,8 +37,8 @@ def create_app():
     
     from models import User
     @login_manager.user_loader
-    def load_user(id):
-        return User.query.get(id)
+    def load_user(user_id):
+        return User.query.get(int(user_id))
     
     @login_manager.unauthorized_handler
     def unauthorized_callback():
@@ -44,6 +49,9 @@ def create_app():
     from routes import register_routes
     register_routes(app,db,bcrypt)
     
+    # Upload and index_file route
+    from routes import register_document_routes
+    register_document_routes(app, db,es)
 
     # Configuration de Flask-Migrate
     migrate = Migrate(app,db)    

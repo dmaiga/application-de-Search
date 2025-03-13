@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload de Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="mb-4">Uploader un Document</h2>
+
+        <!-- Affichage des messages flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="doc_name" class="form-label">Nom du document</label>
+                <input type="text" class="form-control" id="doc_name" name="doc_name" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="doc_type" class="form-label">Type de document</label>
+                <select class="form-control" id="doc_type" name="doc_type" required>
+                    <option value="">Sélectionner un type</option>
+                    <option value="Rapport">Rapport</option>
+                    <option value="Contrat">Contrat</option>
+                    <option value="Facture">Facture</option>
+                    <option value="Autre">Autre</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="doc_file" class="form-label">Choisir un fichier (PDF ou DOCX)</label>
+                <input type="file" class="form-control" id="doc_file" name="doc_file" accept=".pdf,.docx" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Uploader</button>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Retour</a>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
