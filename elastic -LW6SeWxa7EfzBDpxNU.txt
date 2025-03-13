@@ -1,8 +1,0 @@
-some_note
-
-elastic: -LW6SeWxa*7EfzBDpxNU
-kibana_system: yBg4+fHrk7bR4W2cGcXM
-
-username:password
-dadi:dadi123
-admin:admin

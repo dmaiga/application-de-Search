@@ -1,8 +1,12 @@
-from flask import Flask, request, jsonify
+from config import DB_URI,ELASTICSEARCH_URL, ELASTICSEARCH_USER, ELASTICSEARCH_PASSWORD,SECRET_KEY
+from flask import Flask, request, jsonify,url_for,redirect
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_login import LoginManager
+from flask_bcrypt import Bcrypt
+
 from flask_jwt_extended import JWTManager, create_access_token,jwt_required, get_jwt_identity
 from models import db, User, Document
-from config import DB_URI,ELASTICSEARCH_URL, ELASTICSEARCH_USER, ELASTICSEARCH_PASSWORD
 import datetime
 import uuid
 import os 
@@ -13,7 +17,42 @@ from utils import extract_text_from_file
 
 
 
+def create_app():
+    app= Flask(__name__, template_folder='templates')
+    app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
+    app.secret_key= SECRET_KEY
 
+     # Initialisation de la base de données
+    db.init_app(app)
+    bcrypt= Bcrypt(app)
+
+    # Configuration de Flask-Login
+    login_manager= LoginManager()
+    login_manager.init_app(app)
+    
+    from models import User
+    @login_manager.user_loader
+    def load_user(id):
+        return User.query.get(id)
+    
+    @login_manager.unauthorized_handler
+    def unauthorized_callback():
+        return redirect( url_for('index'))
+
+    
+    # Enregistrement des routes
+    from routes import register_routes
+    register_routes(app,db,bcrypt)
+    
+
+    # Configuration de Flask-Migrate
+    migrate = Migrate(app,db)    
+    return app
+
+
+
+
+"""
 app = Flask(__name__)
 
 # Configurer la base de données
@@ -154,3 +193,4 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
     app.run(debug=True)
+"""
