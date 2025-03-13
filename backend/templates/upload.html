@@ -32,10 +32,9 @@
                 <label for="doc_type" class="form-label">Type de document</label>
                 <select class="form-control" id="doc_type" name="doc_type" required>
                     <option value="">Sélectionner un type</option>
-                    <option value="Rapport">Rapport</option>
-                    <option value="Contrat">Contrat</option>
-                    <option value="Facture">Facture</option>
-                    <option value="Autre">Autre</option>
+                    {% for doc_type in document_types %}
+                        <option value="{{ doc_type }}">{{ doc_type }}</option>
+                    {% endfor %}
                 </select>
             </div>
 

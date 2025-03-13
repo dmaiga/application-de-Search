@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect,url_for,flash
+from flask import render_template, request, redirect,url_for,flash,send_file
 from flask_login import login_user,logout_user,current_user,login_required
 from models import User,Role, Document
 import os
@@ -8,7 +8,7 @@ import uuid
 from werkzeug.utils import secure_filename 
 from utils import extract_text_from_file,generate_file_hash
 
-def register_routes(app, db,bcrypt):
+def register_routes(app, db,bcrypt,es):
 
     @app.route('/')
     def index():
@@ -75,6 +75,102 @@ def register_routes(app, db,bcrypt):
         return 'My secret message'
     
 
+    @app.route('/documents')
+    @login_required
+    def documents():
+        page = request.args.get('page', 1, type=int)
+        per_page = 5  
+        all_documents = Document.query.paginate(page=page, per_page=per_page)
+        return render_template('documents.html', documents=all_documents)
+    
+
+    @app.route('/download/<string:doc_id>')
+    @login_required
+    def download_document(doc_id):
+        document = Document.query.get(doc_id)
+        if not document:
+            flash("Document non trouvé.", "danger")
+            return redirect(url_for('documents'))
+
+        if not os.path.exists(document.file_path):
+            flash("Fichier non trouvé.", "danger")
+            return redirect(url_for('documents'))
+
+        return send_file(document.file_path, as_attachment=True)
+    
+
+    @app.route('/delete_documents', methods=['POST'])
+    @login_required
+    def delete_documents():
+        try:
+            # Récupérer les IDs des documents à supprimer
+            doc_ids = request.form.getlist('doc_ids')
+            if not doc_ids:
+                flash("Aucun document sélectionné.", "warning")
+                return redirect(url_for('documents'))
+
+            # Supprimer chaque document
+            for doc_id in doc_ids:
+                document = Document.query.get(doc_id)
+                if document:
+                    # Supprimer le fichier du disque
+                    if os.path.exists(document.file_path):
+                        os.remove(document.file_path)
+
+                    # Supprimer l'entrée dans Elasticsearch
+                    try:
+                        es.delete(index="documents", id=doc_id)
+                    except Exception as es_error:
+                        flash(f"Erreur lors de la suppression dans Elasticsearch : {str(es_error)}", "danger")
+                        continue
+
+                    # Supprimer le document de la base de données
+                    db.session.delete(document)
+
+            db.session.commit()
+            flash("Documents supprimés avec succès.", "success")
+            return redirect(url_for('documents'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erreur lors de la suppression des documents : {str(e)}", "danger")
+            return redirect(url_for('documents'))
+
+    @app.route('/delete/<string:doc_id>', methods=['POST'])
+    @login_required
+    def delete_document(doc_id):
+        try:
+            # Récupérer le document à supprimer
+            document = Document.query.get(doc_id)
+            if not document:
+                flash("Document non trouvé.", "danger")
+                return redirect(url_for('documents'))
+    
+            # Supprimer le fichier du disque
+            if os.path.exists(document.file_path):
+                os.remove(document.file_path)
+    
+            # Supprimer le document de la base de données
+            db.session.delete(document)
+            db.session.commit()
+    
+            # Supprimer l'entrée dans Elasticsearch
+            try:
+                es.delete(index="documents", id=doc_id)
+            except Exception as es_error:
+                db.session.rollback()
+                flash(f"Erreur lors de la suppression dans Elasticsearch : {str(es_error)}", "danger")
+                return redirect(url_for('documents'))
+    
+            flash("Document supprimé avec succès.", "success")
+            return redirect(url_for('documents'))
+    
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erreur lors de la suppression du document : {str(e)}", "danger")
+            return redirect(url_for('documents'))
+
+
 
 
 
@@ -83,7 +179,7 @@ def register_document_routes(app,db,es):
     # Connexion à Elasticsearch
 
     # Liste dynamique des types de documents (exemple, peut être stockée en base de données)
-    DOCUMENT_TYPES = ["CV", "Fiche de poste", "Évaluation annuelle","Autre"]
+    DOCUMENT_TYPES = ["cv", "fiche de poste", "evaluation annuelle","rapport","factures","autre"]
 
     @app.route('/upload', methods=['GET', 'POST'])
     @login_required
@@ -211,3 +307,5 @@ def register_document_routes(app,db,es):
             db.session.rollback()
             flash(f"Erreur lors de l'upload : {str(e)}", "danger")
             return redirect(url_for('upload_file'))
+        
+    

@@ -47,7 +47,7 @@ def create_app():
     
     # Enregistrement des routes
     from routes import register_routes
-    register_routes(app,db,bcrypt)
+    register_routes(app,db,bcrypt,es)
     
     # Upload and index_file route
     from routes import register_document_routes
