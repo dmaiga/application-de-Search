@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats de la Recherche</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .highlight {
+            background-color: yellow;  /* Couleur de surbrillance */
+            font-weight: bold;         /* Texte en gras */
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Résultats de la Recherche</h2>
+
+        <!-- Affichage des messages flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Formulaire de recherche -->
+        <form action="{{ url_for('search_documents') }}" method="GET" class="mb-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" name="query" class="form-control" placeholder="Rechercher..." value="{{ request.args.get('query', '') }}" >
+                </div>
+                <div class="col-md-4">
+                    <select name="doc_format" class="form-control">
+                        <option value="" {% if not selected_format %}selected{% endif %}>Tous les formats</option>
+                        <option value="pdf" {% if selected_format == 'pdf' %}selected{% endif %}>PDF</option>
+                        <option value="docx" {% if selected_format == 'docx' %}selected{% endif %}>Word</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">Rechercher</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Liste des résultats -->
+        {% if results %}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Nom du Document</th>
+                        <th>Aperçu</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>{{ result.doc_name }}</td>
+                        <td>
+                            {% for fragment in result.highlight %}
+                                <p>{{ fragment | replace('<em>', '<em class="highlight">') | safe }}</p>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('download_document', doc_id=result.doc_id) }}" class="btn btn-primary btn-sm">Télécharger</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-info">Aucun résultat trouvé.</div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

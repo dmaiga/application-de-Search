@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect,url_for,flash,send_file
+from flask import render_template, request, redirect,url_for,flash,send_file,jsonify
 from flask_login import login_user,logout_user,current_user,login_required
 from models import User,Role, Document
 import os
@@ -62,7 +62,8 @@ def register_routes(app, db,bcrypt,es):
                 return render_template('login.html', error='Invalid credentials')
 
 
-            
+   
+       
 
     @app.route('/logout')
     def logout():
@@ -82,94 +83,69 @@ def register_routes(app, db,bcrypt,es):
         per_page = 5  
         all_documents = Document.query.paginate(page=page, per_page=per_page)
         return render_template('documents.html', documents=all_documents)
-    
 
-    @app.route('/download/<string:doc_id>')
+    @app.route('/search', methods=['GET'])
     @login_required
-    def download_document(doc_id):
-        document = Document.query.get(doc_id)
-        if not document:
-            flash("Document non trouvé.", "danger")
-            return redirect(url_for('documents'))
-
-        if not os.path.exists(document.file_path):
-            flash("Fichier non trouvé.", "danger")
-            return redirect(url_for('documents'))
-
-        return send_file(document.file_path, as_attachment=True)
-    
-
-    @app.route('/delete_documents', methods=['POST'])
-    @login_required
-    def delete_documents():
+    def search_documents():
         try:
-            # Récupérer les IDs des documents à supprimer
-            doc_ids = request.form.getlist('doc_ids')
-            if not doc_ids:
-                flash("Aucun document sélectionné.", "warning")
-                return redirect(url_for('documents'))
+            # Récupérer les paramètres de recherche
+            query = request.args.get('query', '').strip()
+            doc_type = request.args.get('doc_type', '').strip()
+            page = request.args.get('page', 1, type=int)
+            per_page = 10  
+            doc_format = request.args.get('doc_format', '').strip() 
 
-            # Supprimer chaque document
-            for doc_id in doc_ids:
-                document = Document.query.get(doc_id)
-                if document:
-                    # Supprimer le fichier du disque
-                    if os.path.exists(document.file_path):
-                        os.remove(document.file_path)
+            # Construire la requête Elasticsearch
+            search_body = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"match": {"doc_content": query}}
+                        ]
+                    }
+                },
+                "highlight": {
+                    "fields": {
+                        "doc_content": {
+                            "number_of_fragments": 5,  # Retourne jusqu'à 5 fragments
+                            "fragment_size": 150       # Taille maximale de chaque fragment
+                        }
+                    }
+                },
+                "from": (page - 1) * per_page,
+                "size": per_page
+            }
 
-                    # Supprimer l'entrée dans Elasticsearch
-                    try:
-                        es.delete(index="documents", id=doc_id)
-                    except Exception as es_error:
-                        flash(f"Erreur lors de la suppression dans Elasticsearch : {str(es_error)}", "danger")
-                        continue
+            # Ajouter un filtre sur le type de document si spécifié
+            if doc_format:
+                search_body["query"]["bool"].setdefault("filter", []).append({"term": {"doc_format.keyword": doc_format}})
 
-                    # Supprimer le document de la base de données
-                    db.session.delete(document)
 
-            db.session.commit()
-            flash("Documents supprimés avec succès.", "success")
-            return redirect(url_for('documents'))
+            # Exécuter la recherche dans Elasticsearch
+            response = es.search(index="documents", body=search_body)
+
+            # Traiter les résultats
+            results = []
+            for hit in response['hits']['hits']:
+                result = {
+                    "doc_id": hit["_id"],
+                    "doc_name": hit["_source"]["doc_name"],
+                    "doc_type": hit["_source"]["doc_type"],
+                    "highlight": hit.get("highlight", {}).get("doc_content", ["Aucun aperçu disponible"]),
+                    "file_path": hit["_source"]["file_path"]
+                }
+                results.append(result)
+
+            # Calculer le nombre total de pages
+            total_results = response['hits']['total']['value']  # Nombre total de résultats
+            total_pages = (total_results + per_page - 1) // per_page  # Calcul du nombre total de pages
+
+            # Afficher les résultats dans un template
+            return render_template('search_results.html', results=results, query=query, doc_type=doc_type, page=page, total_pages=total_pages)
 
         except Exception as e:
-            db.session.rollback()
-            flash(f"Erreur lors de la suppression des documents : {str(e)}", "danger")
+            flash(f"Erreur lors de la recherche : {str(e)}", "danger")
             return redirect(url_for('documents'))
-
-    @app.route('/delete/<string:doc_id>', methods=['POST'])
-    @login_required
-    def delete_document(doc_id):
-        try:
-            # Récupérer le document à supprimer
-            document = Document.query.get(doc_id)
-            if not document:
-                flash("Document non trouvé.", "danger")
-                return redirect(url_for('documents'))
-    
-            # Supprimer le fichier du disque
-            if os.path.exists(document.file_path):
-                os.remove(document.file_path)
-    
-            # Supprimer le document de la base de données
-            db.session.delete(document)
-            db.session.commit()
-    
-            # Supprimer l'entrée dans Elasticsearch
-            try:
-                es.delete(index="documents", id=doc_id)
-            except Exception as es_error:
-                db.session.rollback()
-                flash(f"Erreur lors de la suppression dans Elasticsearch : {str(es_error)}", "danger")
-                return redirect(url_for('documents'))
-    
-            flash("Document supprimé avec succès.", "success")
-            return redirect(url_for('documents'))
-    
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Erreur lors de la suppression du document : {str(e)}", "danger")
-            return redirect(url_for('documents'))
-
 
 
 
@@ -269,7 +245,7 @@ def register_document_routes(app,db,es):
                     return redirect(url_for('upload_file'))
 
                 flash("Le document a été mis à jour avec succès.", "success")
-                return redirect(url_for('documents'))
+                return redirect(url_for('upload_file'))
 
             # Si aucun doublon n'est détecté, créer un nouveau document
             new_doc = Document(
@@ -292,6 +268,7 @@ def register_document_routes(app,db,es):
                 es.index(index="documents", id=doc_id, body={
                     "doc_name": doc_name,
                     "doc_type": doc_type,
+                    "doc_format": file_extension.lstrip('.'),
                     "doc_content": doc_content,
                     "file_path": file_path
                 })
@@ -301,11 +278,100 @@ def register_document_routes(app,db,es):
                 return redirect(url_for('upload_file'))
 
             flash("Document uploadé avec succès.", "success")
-            return redirect(url_for('documents'))
+            return redirect(url_for('upload_file'))
 
         except Exception as e:
             db.session.rollback()
             flash(f"Erreur lors de l'upload : {str(e)}", "danger")
             return redirect(url_for('upload_file'))
         
+
+    @app.route('/download/<string:doc_id>')
+    @login_required
+    def download_document(doc_id):
+        document = Document.query.get(doc_id)
+        if not document:
+            flash("Document non trouvé.", "danger")
+            return redirect(url_for('documents'))
+
+        if not os.path.exists(document.file_path):
+            flash("Fichier non trouvé.", "danger")
+            return redirect(url_for('documents'))
+
+        return send_file(document.file_path, as_attachment=True)
     
+
+    @app.route('/delete_documents', methods=['POST'])
+    @login_required
+    def delete_documents():
+        try:
+            # Récupérer les IDs des documents à supprimer
+            doc_ids = request.form.getlist('doc_ids')
+            if not doc_ids:
+                flash("Aucun document sélectionné.", "warning")
+                return redirect(url_for('documents'))
+
+            # Supprimer chaque document
+            for doc_id in doc_ids:
+                document = Document.query.get(doc_id)
+                if document:
+                    # Supprimer le fichier du disque
+                    if os.path.exists(document.file_path):
+                        os.remove(document.file_path)
+
+                    # Supprimer l'entrée dans Elasticsearch
+                    try:
+                        es.delete(index="documents", id=doc_id)
+                    except Exception as es_error:
+                        flash(f"Erreur lors de la suppression dans Elasticsearch : {str(es_error)}", "danger")
+                        continue
+
+                    # Supprimer le document de la base de données
+                    db.session.delete(document)
+
+            db.session.commit()
+            flash("Documents supprimés avec succès.", "success")
+            return redirect(url_for('documents'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erreur lors de la suppression des documents : {str(e)}", "danger")
+            return redirect(url_for('documents'))
+
+    @app.route('/delete/<string:doc_id>', methods=['POST'])
+    @login_required
+    def delete_document(doc_id):
+        try:
+            # Récupérer le document à supprimer
+            document = Document.query.get(doc_id)
+            if not document:
+                flash("Document non trouvé.", "danger")
+                return redirect(url_for('documents'))
+    
+            # Supprimer le fichier du disque
+            if os.path.exists(document.file_path):
+                os.remove(document.file_path)
+    
+            # Supprimer le document de la base de données
+            db.session.delete(document)
+            db.session.commit()
+    
+            # Supprimer l'entrée dans Elasticsearch
+            try:
+                es.delete(index="documents", id=doc_id)
+            except Exception as es_error:
+                db.session.rollback()
+                flash(f"Erreur lors de la suppression dans Elasticsearch : {str(es_error)}", "danger")
+                return redirect(url_for('documents'))
+    
+            flash("Document supprimé avec succès.", "success")
+            return redirect(url_for('documents'))
+    
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erreur lors de la suppression du document : {str(e)}", "danger")
+            return redirect(url_for('documents'))
+
+
+
+
