@@ -52,6 +52,11 @@
                     <h3 class="card-title mb-4">Modifier le profil</h3>
                     <form action="{{ url_for('update_profile') }}" method="post" autocomplete="off">
                         <div class="mb-3">
+                            <label for="username" class="form-label">Nom d'utilisateur</label>
+                            <input type="text" class="form-control" id="username" name="username" value="{{ current_user.username }}" required>
+                        </div>
+                        <div class="mb-3">
+                        <div class="mb-3">
                             <label for="first_name" class="form-label">Prénom</label>
                             <input type="text" class="form-control" id="first_name" name="first_name" value="{{ current_user.first_name }}" required>
                         </div>

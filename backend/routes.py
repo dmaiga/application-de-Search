@@ -20,6 +20,7 @@ from utils import extract_text_from_file,generate_file_hash,is_email_valid
 def register_routes(app, db,bcrypt,es):
 
     @app.route('/index')
+    @login_required
     def index():
         return render_template('index.html')
     
@@ -353,24 +354,39 @@ def profiles_user(app,db,bcrypt):
     @login_required
     def update_profile():
         if request.method == 'POST':
+            # Récupérer les données du formulaire
+            username = request.form.get('username')
             first_name = request.form.get('first_name')
             last_name = request.form.get('last_name')
             email = request.form.get('email')
 
-            # Validation des champs
-            if not first_name or not last_name or not email:
-                flash('Tous les champs sont obligatoires.', 'error')
-            elif not is_email_valid(email):
-                flash('L\'adresse email n\'est pas valide.', 'error')
-            else:
-                # Mettre à jour les informations de l'utilisateur
-                current_user.first_name = first_name
-                current_user.last_name = last_name
-                current_user.email = email
-                db.session.commit()
-                flash('Profil mis à jour avec succès !', 'success')
-        return redirect(url_for('profile'))
+            # Validation des champs obligatoires
+            if not all([username, first_name, last_name, email]):
+                flash("Tous les champs sont obligatoires.", 'error')
+                return redirect(url_for('profile'))
 
+            # Vérifier que l'email est valide
+            if not is_email_valid(email):
+                flash("L'adresse email n'est pas valide.", 'error')
+                return redirect(url_for('profile'))
+
+            # Vérifier que le nom d'utilisateur n'existe pas déjà (sauf pour l'utilisateur actuel)
+            existing_user = User.query.filter(User.username == username, User.id != current_user.id).first()
+            if existing_user:
+                flash("Ce nom d'utilisateur est déjà utilisé.", 'error')
+                return redirect(url_for('profile'))
+
+            # Mettre à jour les informations de l'utilisateur
+            current_user.username = username
+            current_user.first_name = first_name
+            current_user.last_name = last_name
+            current_user.email = email
+
+            # Enregistrer les modifications dans la base de données
+            db.session.commit()
+
+            flash("Profil mis à jour avec succès !", 'success')
+            return redirect(url_for('profile'))
 
     @app.route('/change_password', methods=['GET', 'POST'])
     @login_required
