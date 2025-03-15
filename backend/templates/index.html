@@ -1,19 +1,16 @@
-{%extends "base.html" %}
+{% extends "base.html" %}
 
-{%block title %} <h1>Index Page</h1>{%endblock%}
+{% block title %}Accueil{% endblock %}
 
-{%block content %}
-<h1>Index page</h1>
-{%if current_user.is_authenticated %}
-    <h3> Hello {{current_user.username}} !</h3>
-{%else%}
-    <h3>Hello !</h3>
-{%endif %}
-
-<a href="{{url_for('login')}}">Login</a>
-<a href="{{url_for('signup')}}">Sign Up</a>
-<a href="{{url_for('logout')}}">Logout</a>
-<a href="{{url_for('secret')}}">secret</a>
-
-
-{%endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Bienvenue, {{ current_user.first_name }} {{ current_user.last_name }} !</h1>
+    <div class="row mt-4">
+        <div class="col-md-6 mx-auto text-center">
+            <a href="{{ url_for('documents') }}" class="btn btn-primary btn-lg m-2">Voir les documents</a>
+            <a href="{{ url_for('search_documents') }}" class="btn btn-success btn-lg m-2">Rechercher un document</a>
+            <a href="{{ url_for('upload_file') }}" class="btn btn-warning btn-lg m-2">Uploader un document</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

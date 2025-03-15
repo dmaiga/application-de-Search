@@ -6,76 +6,27 @@ import os
 from datetime import datetime
 import uuid
 from werkzeug.utils import secure_filename 
-from utils import extract_text_from_file,generate_file_hash
+from utils import extract_text_from_file,generate_file_hash,is_email_valid
 
+
+"""
+    register_routes
+        auth
+        index
+        document
+        search
+
+"""
 def register_routes(app, db,bcrypt,es):
 
-    @app.route('/')
+    @app.route('/index')
     def index():
         return render_template('index.html')
-        
-        
-    @app.route('/signup',methods=['GET','POST'])
-    def signup():
-        if request.method == 'GET':
-            return render_template('signup.html')
-        elif request.method == 'POST':
-            try :                
-                username = request.form.get('username')
-                password= request.form.get('password')
-                email= request.form.get('email')
-                hash_password = bcrypt.generate_password_hash(password).decode('utf-8')
-                
-                first_user = User.query.first()
-                if first_user is None:  
-                    role = Role.ADMIN
-                else:
-                    role = Role.USER
     
-                user = User(username=username, password=hash_password, email=email, role=role)
-                db.session.add(user)
-                db.session.commit()
-                user = User.query.all()
-                return redirect( url_for('index') )
-            
-            except Exception as e:
-                db.session.rollback()
-                flash(f'Erreur lors de l\'inscription: {e}', 'error')
-                return render_template('signup.html')
-
-    @app.route('/login',methods=['GET','POST'])
-    def login():
-        if request.method == 'GET':
-            return render_template('login.html')
-        elif request.method == 'POST':
-            username = request.form.get('username')
-            password= request.form.get('password')
-            
-            user= User.query.filter(User.username == username).first()
-
-            if user and bcrypt.check_password_hash(user.password, password):
-               login_user(user)
-               flash('Connexion réussie.', 'success')
-               return redirect(url_for('index'))  
-            else:
-                flash('Nom d\'utilisateur ou mot de passe incorrect.', 'error')
-                return render_template('login.html', error='Invalid credentials')
-
-
-   
-       
-
-    @app.route('/logout')
-    def logout():
-        logout_user()
-        return redirect( url_for('index') )
+    @app.route('/', methods=['GET'])
+    def auth():
+        return render_template('auth.html')    
     
-    @app.route('/secret')
-    @login_required
-    def secret():
-        return 'My secret message'
-    
-
     @app.route('/documents')
     @login_required
     def documents():
@@ -147,7 +98,13 @@ def register_routes(app, db,bcrypt,es):
             flash(f"Erreur lors de la recherche : {str(e)}", "danger")
             return redirect(url_for('documents'))
 
+"""
+register_document_routes
+   upload
+   download
+   delete : un ou plusieur
 
+"""
 
 
 def register_document_routes(app,db,es):
@@ -374,4 +331,164 @@ def register_document_routes(app,db,es):
 
 
 
+"""
+    profiles_user
+        signup
+        login
+        logout
+        profile
+        update_profile
+        change_password
+
+
+"""
+
+def profiles_user(app,db,bcrypt):
+    @app.route('/profile', methods=['GET'])
+    @login_required
+    def profile():
+        return render_template('profile.html')
+
+    @app.route('/update_profile', methods=['POST'])
+    @login_required
+    def update_profile():
+        if request.method == 'POST':
+            first_name = request.form.get('first_name')
+            last_name = request.form.get('last_name')
+            email = request.form.get('email')
+
+            # Validation des champs
+            if not first_name or not last_name or not email:
+                flash('Tous les champs sont obligatoires.', 'error')
+            elif not is_email_valid(email):
+                flash('L\'adresse email n\'est pas valide.', 'error')
+            else:
+                # Mettre à jour les informations de l'utilisateur
+                current_user.first_name = first_name
+                current_user.last_name = last_name
+                current_user.email = email
+                db.session.commit()
+                flash('Profil mis à jour avec succès !', 'success')
+        return redirect(url_for('profile'))
+
+
+    @app.route('/change_password', methods=['GET', 'POST'])
+    @login_required
+    def change_password():
+        if request.method == 'POST':
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+
+            # Vérifier si le mot de passe actuel est correct
+            if not bcrypt.check_password_hash(current_user.password, current_password):
+                flash('Mot de passe actuel incorrect.', 'error')
+            # Vérifier si les nouveaux mots de passe correspondent
+            elif new_password != confirm_password:
+                flash('Les nouveaux mots de passe ne correspondent pas.', 'error')
+            else:
+                # Mettre à jour le mot de passe
+                current_user.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+                db.session.commit()
+                flash('Mot de passe changé avec succès !', 'success')
+                return redirect(url_for('profile'))
+
+        return render_template('change_password.html')
+    
+    @app.route('/signup', methods=['POST'])
+    def signup():
+        if request.method == 'POST':
+            # Récupérer les données du formulaire
+            first_name = request.form.get('first_name')
+            last_name = request.form.get('last_name')
+            username = request.form.get('username')
+            email = request.form.get('email')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+    
+            # Validation des champs obligatoires
+            if not all([first_name, last_name, username, email, password, confirm_password]):
+                flash("Tous les champs sont obligatoires.", 'error')
+                return redirect(url_for('auth'))
+    
+            # Vérifier que les mots de passe correspondent
+            if password != confirm_password:
+                flash("Les mots de passe ne correspondent pas.", 'error')
+                return redirect(url_for('auth'))
+    
+            # Vérifier que l'email est valide
+            if not is_email_valid(email):  # Utilisez la fonction is_email_valid
+                flash("L'adresse email n'est pas valide.", 'error')
+                return redirect(url_for('auth'))
+    
+            # Vérifier que l'email ou le nom d'utilisateur n'existe pas déjà
+            if User.query.filter((User.email == email) | (User.username == username)).first():
+                flash("Un compte avec cet email ou ce nom d'utilisateur existe déjà.", 'error')
+                return redirect(url_for('auth'))
+    
+            # Hacher le mot de passe
+            hash_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    
+            # Créer un nouvel utilisateur
+            user = User(
+                first_name=first_name,
+                last_name=last_name,
+                username=username,
+                email=email,
+                password=hash_password
+            )
+            db.session.add(user)
+            db.session.commit()
+    
+            # Connecter l'utilisateur après l'inscription
+            login_user(user)
+    
+            # Rediriger vers la page d'accueil avec un message de succès
+            flash("Inscription réussie !", 'success')
+            return redirect(url_for('index'))
+   
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        if request.method == 'GET':
+            return render_template('auth.html')
+
+        elif request.method == 'POST':
+            try:
+                # Récupérer les données du formulaire
+                username = request.form.get('username')
+                password = request.form.get('password')
+
+                # Validation des champs obligatoires
+                if not username or not password:
+                    flash("Tous les champs sont obligatoires.", 'error')
+                    return redirect(url_for('auth'))
+
+                # Rechercher l'utilisateur dans la base de données
+                user = User.query.filter(User.username == username).first()
+
+                # Vérifier le mot de passe
+                if user and bcrypt.check_password_hash(user.password, password):
+                    login_user(user)
+                    flash('Connexion réussie.', 'success')
+                    return redirect(url_for('index'))
+                else:
+                    flash('Nom d\'utilisateur ou mot de passe incorrect.', 'error')
+                    return redirect(url_for('auth'))
+
+            except Exception as e:
+                flash(f'Erreur lors de la connexion: {str(e)}', 'error')
+                return redirect(url_for('auth'))
+
+    
+
+    @app.route('/logout')
+    def logout():
+        logout_user()
+        return redirect(url_for('auth')) 
+    
+    @app.route('/secret')
+    @login_required
+    def secret():
+        return 'My secret message'
+    
 

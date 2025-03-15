@@ -16,6 +16,8 @@ class Role(Enum):
 class User(db.Model, UserMixin ):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(100), nullable=False)  
+    last_name = db.Column(db.String(100), nullable=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False)

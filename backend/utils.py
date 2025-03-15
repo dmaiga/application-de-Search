@@ -3,8 +3,17 @@ from pdfminer.high_level import extract_text
 from docx import Document
 import logging
 import hashlib
+import re
 
 logging.basicConfig(level=logging.ERROR)
+"""
+    extract_text_from_file
+    generate_file_hash
+    is_email_valid
+
+
+"""
+
 
 def extract_text_from_file(file_path):
     """
@@ -46,3 +55,11 @@ def generate_file_hash(file_path):
         for byte_block in iter(lambda: f.read(4096), b""):
             sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
+
+
+
+
+def is_email_valid(email):
+    """Vérifie si l'email est valide."""
+    pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    return re.match(pattern, email) is not None

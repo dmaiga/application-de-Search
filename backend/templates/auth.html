@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connexion/Inscription</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #0d6efd;
+            color: #fff;
+            border-radius: 10px 10px 0 0;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            color: #fff;
+            background-color: transparent;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <ul class="nav nav-tabs card-header-tabs" id="authTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab" aria-controls="login" aria-selected="true">Connexion</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="signup-tab" data-bs-toggle="tab" data-bs-target="#signup" type="button" role="tab" aria-controls="signup" aria-selected="false">Inscription</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="authTabsContent">
+                            <!-- Login Tab -->
+                            <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
+                                <h2 class="text-center mb-4">Connexion</h2>
+                                <form action="{{ url_for('login') }}" method="post" autocomplete="off">
+                                    <div class="mb-3">
+                                        <label for="username" class="form-label">Nom d'utilisateur</label>
+                                        <input type="text" class="form-control" id="username" name="username" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="password" class="form-label">Mot de passe</label>
+                                        <input type="password" class="form-control" id="password" name="password" required>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary btn-lg">Se connecter</button>
+                                    </div>
+                                </form>
+                            </div>
+            <!-- Signup Tab -->
+            <div class="tab-pane fade" id="signup" role="tabpanel" aria-labelledby="signup-tab">
+                <h2 class="text-center mb-4">Inscription</h2>
+                <form action="{{ url_for('signup') }}" method="post" autocomplete="off">
+                    <!-- Champ Prénom -->
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">Prénom</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" required>
+                    </div>
+                    <!-- Champ Nom -->
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">Nom</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" required>
+                    </div>
+                    <!-- Champ Nom d'utilisateur -->
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nom d'utilisateur</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <!-- Champ Email -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <!-- Champ Mot de passe -->
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Mot de passe</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <!-- Champ Confirmation du mot de passe -->
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirmer le mot de passe</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    <!-- Bouton de soumission -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">S'inscrire</button>
+                    </div>
+                </form>
+            </div>
+    <!-- Bootstrap JS (avec Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

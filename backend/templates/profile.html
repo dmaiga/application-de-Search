@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Profil{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Profil de {{ current_user.first_name }} {{ current_user.last_name }}</h1>
+
+    <!-- Affichage des messages flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Colonne de gauche : Informations de l'utilisateur -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Informations du profil</h3>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>Nom d'utilisateur :</strong> {{ current_user.username }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Prénom :</strong> {{ current_user.first_name }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Nom :</strong> {{ current_user.last_name }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Email :</strong> {{ current_user.email }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Date d'inscription :</strong> {{ current_user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne de droite : Formulaire de modification du profil -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Modifier le profil</h3>
+                    <form action="{{ url_for('update_profile') }}" method="post" autocomplete="off">
+                        <div class="mb-3">
+                            <label for="first_name" class="form-label">Prénom</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ current_user.first_name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="last_name" class="form-label">Nom</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ current_user.last_name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                    </form>
+
+                    <!-- Lien vers la page de changement de mot de passe -->
+                    <div class="mt-4">
+                        <a href="{{ url_for('change_password') }}" class="btn btn-warning">Changer le mot de passe</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
