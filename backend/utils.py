@@ -5,7 +5,6 @@ import logging
 import hashlib
 import re
 
-logging.basicConfig(level=logging.ERROR)
 """
     extract_text_from_file
     generate_file_hash

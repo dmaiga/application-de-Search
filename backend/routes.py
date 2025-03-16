@@ -10,56 +10,88 @@ from utils import extract_text_from_file,generate_file_hash,is_email_valid
 
 
 """
-    register_routes
-        auth
-        index
-        document
-        search
+    Module de gestion des routes pour une application Flask
+
+    Ce module définit les routes suivantes :
+    - `/index` : Page d'accueil protégée par authentification
+    - `/` : Page d'authentification
+    - `/documents` : Page listant les documents avec pagination
+    - `/search` : Recherche avancée de documents avec Elasticsearch
 
 """
 def register_routes(app, db,bcrypt,es):
+    """
+        Enregistre les routes de l'application Flask.
+
+        :param app: Instance de l'application Flask
+        :param db: Instance de la base de données SQLAlchemy
+        :param bcrypt: Instance de l'utilitaire de chiffrement Bcrypt
+        :param es: Instance du client Elasticsearch
+   
+    """
 
     @app.route('/index')
-    @login_required
+    @login_required # Nécessite une authentification pour accéder à cette page
     def index():
+        """Affiche la page d'accueil après connexion."""
+
         return render_template('index.html')
     
     @app.route('/', methods=['GET'])
     def auth():
+        """Affiche la page d'authentification."""
         return render_template('auth.html')    
     
     @app.route('/documents')
     @login_required
     def documents():
+        """
+            Affiche une liste paginée des documents disponibles.
+
+            :query_param page: Numéro de la page demandée (par défaut 1)
+            :return: Template HTML avec la liste paginée des documents
+       
+         """
         page = request.args.get('page', 1, type=int)
-        per_page = 5  
+        per_page = 5  # Nombre de documents par page
         all_documents = Document.query.paginate(page=page, per_page=per_page)
         return render_template('documents.html', documents=all_documents)
 
     @app.route('/search', methods=['GET'])
     @login_required
     def search_documents():
+        """
+            Effectue une recherche avancée de documents en utilisant Elasticsearch.
+
+            :query_param query: Terme de recherche dans le contenu des documents
+            :query_param doc_type: Filtre optionnel par type de document
+            :query_param page: Numéro de page pour la pagination (par défaut 1)
+            :query_param doc_format: Filtre optionnel par format de document
+            :return: Template HTML affichant les résultats de la recherche
+      
+        """
         try:
-            # Récupérer les paramètres de recherche
+            # Extraction des paramètres de requête
             query = request.args.get('query', '').strip()
             doc_type = request.args.get('doc_type', '').strip()
             page = request.args.get('page', 1, type=int)
-            per_page = 10  
+            per_page = 10   # Nombre de résultats par page
             doc_format = request.args.get('doc_format', '').strip() 
 
-            # Construire la requête Elasticsearch
+            # Construction de la requête pour Elasticsearch
+
             search_body = {
                 "query": {
                     "bool": {
                         "must": [
-                            {"match": {"doc_content": query}}
+                            {"match": {"doc_content": query}}  # Recherche sur le contenu des documents
                         ]
                     }
                 },
                 "highlight": {
                     "fields": {
                         "doc_content": {
-                            "number_of_fragments": 5,  # Retourne jusqu'à 5 fragments
+                            "number_of_fragments": 5,  # Nombre maximum de fragments retournés
                             "fragment_size": 150       # Taille maximale de chaque fragment
                         }
                     }
@@ -68,15 +100,15 @@ def register_routes(app, db,bcrypt,es):
                 "size": per_page
             }
 
-            # Ajouter un filtre sur le type de document si spécifié
+            # Ajout d'un filtre sur le format du document si spécifié
             if doc_format:
                 search_body["query"]["bool"].setdefault("filter", []).append({"term": {"doc_format.keyword": doc_format}})
 
 
-            # Exécuter la recherche dans Elasticsearch
+            # Exécution de la recherche dans Elasticsearch
             response = es.search(index="documents", body=search_body)
 
-            # Traiter les résultats
+            # Traitement des résultats
             results = []
             for hit in response['hits']['hits']:
                 result = {
@@ -88,11 +120,11 @@ def register_routes(app, db,bcrypt,es):
                 }
                 results.append(result)
 
-            # Calculer le nombre total de pages
+            # Calcul du nombre total de pages
             total_results = response['hits']['total']['value']  # Nombre total de résultats
             total_pages = (total_results + per_page - 1) // per_page  # Calcul du nombre total de pages
 
-            # Afficher les résultats dans un template
+            #  # Affichage des résultats dans un template
             return render_template('search_results.html', results=results, query=query, doc_type=doc_type, page=page, total_pages=total_pages)
 
         except Exception as e:
@@ -100,25 +132,53 @@ def register_routes(app, db,bcrypt,es):
             return redirect(url_for('documents'))
 
 """
-register_document_routes
-   upload
-   download
-   delete : un ou plusieur
-   view_document
+    Module de gestion des documents :
 
+    Routes :
+       - /upload : Téléchargement de fichiers
+       - /download/<doc_id> : Téléchargement d'un document
+       - /delete_documents : Suppression de plusieurs documents
+       - /delete/<doc_id> : Suppression d'un document spécifique
+       - /view_document/<doc_id> : Affichage d'un document
 """
 
 
 def register_document_routes(app,db,es,UUID):
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limite à 16MB
-    # Connexion à Elasticsearch
+    """
+        Enregistre les routes liées à la gestion des documents dans l'application Flask.
 
-    # Liste dynamique des types de documents (exemple, peut être stockée en base de données)
-    DOCUMENT_TYPES = ["cv", "fiche de poste", "evaluation annuelle","rapport","factures","autre"]
+        :param app: Instance de l'application Flask.
+        :param db: Instance de la base de données SQLAlchemy.
+        :param es: Instance d'Elasticsearch pour l'indexation des documents.
+        :param UUID: Fonction pour la validation des UUID.
+   
+     """
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limite à 16MB
+    
+
+    #  Liste des types de documents acceptés 
+    DOCUMENT_TYPES = [
+    "CV", 
+    "fiche de poste", 
+    "évaluation annuelle", 
+    "proposition commerciale", 
+    "contrat client", 
+    "rapport de réunion", 
+    "devis", 
+    "plan de projet", 
+    "documentation technique", 
+    "compte rendu d'activité", 
+    "factures", 
+    "autre"
+]
+
 
     @app.route('/upload', methods=['GET', 'POST'])
     @login_required
     def upload_file():
+        """
+            Gère l'upload de fichiers par les utilisateurs.
+        """
         if request.method == 'GET':
             return render_template('upload.html', document_types=DOCUMENT_TYPES)
 
@@ -137,7 +197,7 @@ def register_document_routes(app,db,es,UUID):
                 flash("Type de document invalide.", "danger")
                 return redirect(url_for('upload_file'))
 
-            # Vérification de l'extension du fichier
+            #Vérification de l'extension du fichier
             allowed_extensions = {'.pdf', '.docx'}
             file_extension = os.path.splitext(doc_file.filename)[-1].lower()
 
@@ -157,20 +217,20 @@ def register_document_routes(app,db,es,UUID):
             file_path = os.path.join(upload_folder, filename)
             doc_file.save(file_path)
 
-            # Extraction du texte du fichier
+             # Extraction du texte du document pour indexation
             doc_content = extract_text_from_file(file_path)
 
             if not doc_content or doc_content.strip() == "":
                 flash("Le fichier semble vide ou illisible.", "warning")
 
-            # Générer un hash du fichier pour détecter les doublons
+            # Généreration d'un hash du fichier pour détecter les doublons
             file_hash = generate_file_hash(file_path)
 
             # Vérifier si un document avec le même hash existe déjà
             existing_doc = Document.query.filter_by(file_hash=file_hash).first()
 
             if existing_doc:
-                # Supprimer l'ancien fichier du disque
+                # Supprission de l'ancien fichier du disque
                 if os.path.exists(existing_doc.file_path):
                     os.remove(existing_doc.file_path)
 
@@ -184,7 +244,7 @@ def register_document_routes(app,db,es,UUID):
 
                 db.session.commit()
 
-                # Mettre à jour Elasticsearch
+                # Mise à jour Elasticsearch
                 try:
                     es.update(
                         index="documents",
@@ -206,7 +266,7 @@ def register_document_routes(app,db,es,UUID):
                 flash("Le document a été mis à jour avec succès.", "success")
                 return redirect(url_for('upload_file'))
 
-            # Si aucun doublon n'est détecté, créer un nouveau document
+            # Si aucun doublon n'est détecté, création d'un nouveau document
             new_doc = Document(
                 doc_id=doc_id,
                 doc_name=doc_name,
@@ -222,7 +282,7 @@ def register_document_routes(app,db,es,UUID):
             db.session.add(new_doc)
             db.session.commit()
 
-            # Indexer dans Elasticsearch
+            # Indexation dans Elasticsearch
             try:
                 es.index(index="documents", id=doc_id, body={
                     "doc_name": doc_name,
@@ -248,6 +308,9 @@ def register_document_routes(app,db,es,UUID):
     @app.route('/download/<string:doc_id>')
     @login_required
     def download_document(doc_id):
+        """
+        Permet aux utilisateurs de télécharger un document spécifique.
+        """
         document = Document.query.get(doc_id)
         if not document:
             flash("Document non trouvé.", "danger")
@@ -263,18 +326,21 @@ def register_document_routes(app,db,es,UUID):
     @app.route('/delete_documents', methods=['POST'])
     @login_required
     def delete_documents():
+        """
+        Supprime plusieurs documents en une seule requête.
+        """
         try:
-            # Récupérer les IDs des documents à supprimer
+            # Récupération des IDs des documents à supprimer
             doc_ids = request.form.getlist('doc_ids')
             if not doc_ids:
                 flash("Aucun document sélectionné.", "warning")
                 return redirect(url_for('documents'))
 
-            # Supprimer chaque document
+            # Suppression de chaque document
             for doc_id in doc_ids:
                 document = Document.query.get(doc_id)
                 if document:
-                    # Supprimer le fichier du disque
+                    # Suppression du fichier du disque
                     if os.path.exists(document.file_path):
                         os.remove(document.file_path)
 
@@ -333,6 +399,9 @@ def register_document_routes(app,db,es,UUID):
 
     @app.route('/view_document/<string:doc_id>')
     def view_document(doc_id):
+        """
+            Affiche un document dans le navigateur au lieu de le télécharger.
+        """
         try:
             # Convertir la chaîne en UUID pour validation
             doc_uuid = UUID(doc_id)
@@ -352,39 +421,64 @@ def register_document_routes(app,db,es,UUID):
 
 
 """
-    profiles_user
-        signup
-        login
-        logout
-        profile
-        update_profile
-        change_password
+    Module de gestion des profils utilisateurs.
 
+    Ce module contient les routes pour l'inscription, la connexion, la déconnexion,
+    la mise à jour du profil et le changement de mot de passe.
+
+    Routes disponibles :
+    - /signup : Inscription
+    - /login : Connexion
+    - /logout : Déconnexion
+    - /profile : Affichage du profil
+    - /update_profile : Mise à jour du profil
+    - /change_password : Changement de mot de passe
 
 """
 
 def profiles_user(app,db,bcrypt):
+    """
+        Initialise les routes liées aux profils utilisateurs.
+
+        :param app: L'application Flask
+        :param db: L'instance de la base de données SQLAlchemy
+        :param bcrypt: L'instance de Bcrypt pour le hachage des mots de passe
+   
+    """
+
     @app.route('/profile', methods=['GET'])
     @login_required
     def profile():
+        """Affiche la page du profil utilisateur."""
         return render_template('profile.html')
 
     @app.route('/update_profile', methods=['POST'])
     @login_required
     def update_profile():
+        """
+            Met à jour les informations du profil utilisateur.
+
+            Vérifie que tous les champs requis sont remplis et que l'email
+            et le nom d'utilisateur sont valides avant d'enregistrer les modifications.
+        
+        """
         if request.method == 'POST':
             # Récupérer les données du formulaire
             username = request.form.get('username')
             first_name = request.form.get('first_name')
             last_name = request.form.get('last_name')
             email = request.form.get('email')
+            job_title = request.form.get('job_title')
+            department = request.form.get('department')
+            phone = request.form.get('phone')
+            work_location = request.form.get('work_location')
 
             # Validation des champs obligatoires
             if not all([username, first_name, last_name, email]):
                 flash("Tous les champs sont obligatoires.", 'error')
                 return redirect(url_for('profile'))
 
-            # Vérifier que l'email est valide
+            # Vérification de la validite de l'email 
             if not is_email_valid(email):
                 flash("L'adresse email n'est pas valide.", 'error')
                 return redirect(url_for('profile'))
@@ -396,10 +490,15 @@ def profiles_user(app,db,bcrypt):
                 return redirect(url_for('profile'))
 
             # Mettre à jour les informations de l'utilisateur
+            
             current_user.username = username
             current_user.first_name = first_name
             current_user.last_name = last_name
             current_user.email = email
+            current_user.job_title = job_title
+            current_user.department = department
+            current_user.phone = phone
+            current_user.work_location = work_location
 
             # Enregistrer les modifications dans la base de données
             db.session.commit()
@@ -410,6 +509,13 @@ def profiles_user(app,db,bcrypt):
     @app.route('/change_password', methods=['GET', 'POST'])
     @login_required
     def change_password():
+        """
+            Permet à l'utilisateur de changer son mot de passe.
+            
+            Vérifie que l'ancien mot de passe est correct et que les nouveaux
+            mots de passe correspondent avant de mettre à jour la base de données.
+       
+        """
         if request.method == 'POST':
             current_password = request.form.get('current_password')
             new_password = request.form.get('new_password')
@@ -418,6 +524,7 @@ def profiles_user(app,db,bcrypt):
             # Vérifier si le mot de passe actuel est correct
             if not bcrypt.check_password_hash(current_user.password, current_password):
                 flash('Mot de passe actuel incorrect.', 'error')
+           
             # Vérifier si les nouveaux mots de passe correspondent
             elif new_password != confirm_password:
                 flash('Les nouveaux mots de passe ne correspondent pas.', 'error')
@@ -432,18 +539,26 @@ def profiles_user(app,db,bcrypt):
     
     @app.route('/signup', methods=['POST'])
     def signup():
+        """
+            Inscrit un nouvel utilisateur.
+
+            Vérifie que tous les champs requis sont remplis, que l'email est valide,
+            et que le nom d'utilisateur n'est pas déjà utilisé avant de créer un nouveau compte.
+        """
         if request.method == 'POST':
+
             # Récupérer les données du formulaire
+
             first_name = request.form.get('first_name')
             last_name = request.form.get('last_name')
             username = request.form.get('username')
             email = request.form.get('email')
             password = request.form.get('password')
             confirm_password = request.form.get('confirm_password')
-            job_title = request.form.get('job_title')  # Poste occupé (facultatif)
-            department = request.form.get('department')  # Département (facultatif)
-            phone = request.form.get('phone')  # Téléphone (facultatif)
-            work_location = request.form.get('work_location')  # Adresse de l'entreprise (facultatif)
+            job_title = request.form.get('job_title')  
+            department = request.form.get('department')  
+            phone = request.form.get('phone') 
+            work_location = request.form.get('work_location')  
 
             # Validation des champs obligatoires
             if not all([first_name, last_name, username, email, password, confirm_password]):
@@ -456,7 +571,7 @@ def profiles_user(app,db,bcrypt):
                 return redirect(url_for('auth'))
 
             # Vérifier que l'email est valide
-            if not is_email_valid(email):  # Utilisez la fonction is_email_valid
+            if not is_email_valid(email):  # Utilisation de la fonction is_email_valid import from utils
                 flash("L'adresse email n'est pas valide.", 'error')
                 return redirect(url_for('auth'))
 
@@ -465,20 +580,20 @@ def profiles_user(app,db,bcrypt):
                 flash("Un compte avec cet email ou ce nom d'utilisateur existe déjà.", 'error')
                 return redirect(url_for('auth'))
 
-            # Hacher le mot de passe
+            # Hachage du mot de passe
             hash_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-            # Créer un nouvel utilisateur
+            # Création d'un nouveau utilisateur
             user = User(
                 first_name=first_name,
                 last_name=last_name,
                 username=username,
                 email=email,
                 password=hash_password,
-                job_title=job_title,  # Poste occupé (facultatif)
-                department=department,  # Département (facultatif)
-                phone=phone,  # Téléphone (facultatif)
-                work_location=work_location  # Adresse de l'entreprise (facultatif)
+                job_title=job_title,  
+                department=department,  
+                phone=phone, 
+                work_location=work_location  
             )
             db.session.add(user)
             db.session.commit()
@@ -486,36 +601,42 @@ def profiles_user(app,db,bcrypt):
             # Connecter l'utilisateur après l'inscription
             login_user(user)
 
-            # Rediriger vers la page d'accueil avec un message de succès
+            # Redirection vers la page d'accueil avec un message de succès
             flash("Inscription réussie !", 'success')
             return redirect(url_for('index'))
    
     @app.route('/login', methods=['GET', 'POST'])
     def login():
+        """
+            Connecte un utilisateur existant.
+
+            Vérifie que les informations de connexion sont correctes avant d'autoriser l'accès.
+        
+        """
         if request.method == 'GET':
             return render_template('auth.html')
 
         elif request.method == 'POST':
             try:
                 # Récupérer les données du formulaire
-                username = request.form.get('username')
+                username_or_email = request.form.get('username_or_email')
                 password = request.form.get('password')
 
                 # Validation des champs obligatoires
-                if not username or not password:
+                if not username_or_email or not password:
                     flash("Tous les champs sont obligatoires.", 'error')
                     return redirect(url_for('auth'))
 
-                # Rechercher l'utilisateur dans la base de données
-                user = User.query.filter(User.username == username).first()
-
+                # Rechercher l'utilisateur dans la base de données par username ou email
+                user = User.query.filter(   (User.username == username_or_email) | (User.email == username_or_email)   ).first()
+                
                 # Vérifier le mot de passe
                 if user and bcrypt.check_password_hash(user.password, password):
-                    login_user(user)
+                    login_user(user)  # Connecter l'utilisateur
                     flash('Connexion réussie.', 'success')
                     return redirect(url_for('index'))
                 else:
-                    flash('Nom d\'utilisateur ou mot de passe incorrect.', 'error')
+                    flash('Nom d\'utilisateur/email ou mot de passe incorrect.', 'error')
                     return redirect(url_for('auth'))
 
             except Exception as e:
@@ -525,13 +646,16 @@ def profiles_user(app,db,bcrypt):
     
 
     @app.route('/logout')
+
     def logout():
+        """Déconnecte l'utilisateur."""
         logout_user()
         return redirect(url_for('auth')) 
     
     @app.route('/secret')
     @login_required
     def secret():
+        """Page secrète accessible uniquement aux utilisateurs connectés."""
         return 'My secret message'
     
 

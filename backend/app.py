@@ -18,13 +18,17 @@ from utils import extract_text_from_file
 
 
 def create_app():
-    app= Flask(__name__, template_folder='templates', static_folder='static', static_url_path='/')
-    app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
-    app.secret_key= SECRET_KEY
+    """
+    Fonction principale pour créer et configurer l'application Flask.
+    """
 
-     # Initialisation de la base de données
+    app= Flask(__name__, template_folder='templates', static_folder='static', static_url_path='/')
+    app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI  # Configuration de l'URI de la base de données
+    app.secret_key = SECRET_KEY  # Clé secrète pour la session Flask
+
+    # Initialisation de la base de données
     db.init_app(app)
-    bcrypt= Bcrypt(app)
+    bcrypt= Bcrypt(app) # Initialisation de Bcrypt pour le hachage des mots de pass
 
     # Connexion à Elasticsearch
     es = Elasticsearch(
@@ -32,34 +36,41 @@ def create_app():
     basic_auth=(ELASTICSEARCH_USER, ELASTICSEARCH_PASSWORD)
         )
     
-    # Configuration de Flask-Login
+    # Configuration de Flask-Login pour la gestion des utilisateurs
     login_manager= LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = 'auth'
+    login_manager.login_view = 'auth' # Vue de connexion par défaut
     
     from models import User
     @login_manager.user_loader
     def load_user(user_id):
+        """
+        Charge l'utilisateur à partir de l'ID stocké dans la session.
+        """
         return User.query.get(int(user_id))
     
     @login_manager.unauthorized_handler
     def unauthorized_callback():
+        """
+            Redirige les utilisateurs non authentifiés vers la page de connexion.
+        """
         return redirect( url_for('auth'))
 
     
-    # Enregistrement des routes
+    # Enregistrement des routes  principales
     from routes import register_routes
     register_routes(app,db,bcrypt,es)
     
-    # Upload and index_file route
+    # Enregistrement des routes pour la gestion des documents
     from routes import register_document_routes
     register_document_routes(app, db,es,UUID)
 
-    # gestion des users
+    # Enregistrement des routes pour la gestion des profils utilisateurs
     from routes import profiles_user
     profiles_user(app,db,bcrypt)
 
-    # Configuration de Flask-Migrate
+    # Configuration de Flask-Migrate pour la gestion des migrations de la base de données
+
     migrate = Migrate(app,db)    
     return app
 
