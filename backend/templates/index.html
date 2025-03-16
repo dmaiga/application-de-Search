@@ -13,7 +13,7 @@
     <!-- Sections cliquables -->
     <div class="row mt-5">
         <!-- Gestion des documents -->
-        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='{{ url_for('documents') }}'">
+        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='/documents'">
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <i class="fas fa-folder-open fa-3x mb-3 text-primary"></i>
@@ -24,7 +24,7 @@
         </div>
 
         <!-- Recherche avancée -->
-        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='{{ url_for('search_documents') }}'">
+        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='/search'">
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <i class="fas fa-search fa-3x mb-3 text-success"></i>
@@ -35,7 +35,7 @@
         </div>
 
         <!-- Upload facile -->
-        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='{{ url_for('upload_file') }}'">
+        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='/upload'">
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <i class="fas fa-upload fa-3x mb-3 text-warning"></i>
@@ -46,30 +46,88 @@
         </div>
     </div>
 </div>
-
-<!-- Styles personnalisés -->
 <style>
-    .clickable-card {
-        cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
+/* Styles généraux */
+body {
+    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+}
 
-    .clickable-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+/* Animation pour les titres */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
-    .card {
-        border: none;
-        border-radius: 10px;
-    }
+h1, .lead {
+    animation: fadeIn 1s ease-out;
+}
 
-    .card-body {
-        padding: 2rem;
-    }
+/* Styles pour la barre de navigation */
+.navbar {
+    background-color: #0d6efd !important;
+    padding: 0.5rem 1rem;
+}
 
-    .fa-3x {
-        color: inherit; /* Utilise la couleur du texte parent */
-    }
+.navbar-brand, .nav-link {
+    color: #fff !important;
+}
+
+.nav-link:hover {
+    color: #f8f9fa !important;
+}
+
+.dropdown-menu {
+    background-color: #0d6efd !important;
+    border: none;
+}
+
+.dropdown-item {
+    color: #fff !important;
+}
+
+.dropdown-item:hover {
+    background-color: #0b5ed7 !important;
+}
+
+/* Styles pour les cartes cliquables */
+.clickable-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 1rem;
+}
+
+.clickable-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+    background-color: #fff;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.fa-3x {
+    color: inherit;
+}
+
+.card h3 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+}
 </style>
 {% endblock %}
