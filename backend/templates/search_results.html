@@ -7,17 +7,7 @@
     <div class="container mt-5">
         <h2>Résultats de la Recherche</h2>
        
-        <!-- Affichage des messages flash -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+    
 
         <!-- Formulaire de recherche -->
         <form action="{{ url_for('search_documents') }}" method="GET" class="mb-4">
@@ -58,6 +48,9 @@
                             {% endfor %}
                         </td>
                         <td>
+                            <!-- Bouton pour visualiser le document dans un nouvel onglet -->
+                            <a href="{{ url_for('view_document', doc_id=result.doc_id) }}" target="_blank" class="btn btn-info btn-sm">Voir</a>
+                            <!-- Bouton pour télécharger le document -->
                             <a href="{{ url_for('download_document', doc_id=result.doc_id) }}" class="btn btn-primary btn-sm">Télécharger</a>
                         </td>
                     </tr>
@@ -68,8 +61,6 @@
             <div class="alert alert-info">Aucun résultat trouvé.</div>
         {% endif %}
     </div>
-
-  
 </body>
 {% endblock %}
 </html>

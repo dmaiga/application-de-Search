@@ -1,48 +1,75 @@
+
 {% extends "base.html" %}
 
 {% block title %}Accueil{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center">Bienvenue, {{ current_user.first_name }} {{ current_user.last_name }} !</h1>
+    <h1 class="text-center">Bienvenue, {{ current_user.first_name |capitalize }} {{ current_user.last_name | upper}} !</h1>
     <p class="text-center lead mt-3">
         Gérer vos documents n'a jamais été aussi simple. Explorez, recherchez et partagez vos fichiers en toute sécurité.
     </p>
-    <div class="text-center mt-4">
-        <img src="{{ url_for('static', filename='images/welcome.png') }}" alt="Bienvenue" class="img-fluid" style="max-width: 300px;">
-    </div>
-    <div class="row mt-4">
-        <div class="col-md-6 mx-auto text-center">
-            <a href="{{ url_for('documents') }}" class="btn btn-primary btn-lg m-2">
-                <i class="fas fa-folder-open"></i> Voir les documents
-            </a>
-            <a href="{{ url_for('search_documents') }}" class="btn btn-success btn-lg m-2">
-                <i class="fas fa-search"></i> Rechercher un document
-            </a>
-            <a href="{{ url_for('upload_file') }}" class="btn btn-warning btn-lg m-2">
-                <i class="fas fa-upload"></i> Uploader un document
-            </a>
-        </div>
-    </div>
+
+    <!-- Sections cliquables -->
     <div class="row mt-5">
-        <div class="col-md-4 text-center">
-            <a href="{{ url_for('documents') }}">
-            <i class="fas fa-folder-open fa-3x mb-3"></i>
-            <h3>Gestion des documents</h3>
-            <p>Organisez et gérez vos documents en toute simplicité.</p>
-            </a>
+        <!-- Gestion des documents -->
+        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='{{ url_for('documents') }}'">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-folder-open fa-3x mb-3 text-primary"></i>
+                    <h3>Gestion des documents</h3>
+                    <p>Organisez et gérez vos documents en toute simplicité.</p>
+                </div>
+            </div>
         </div>
-        <div class="col-md-4 text-center">
-            <i class="fas fa-search fa-3x mb-3"></i>
-            <h3>Recherche avancée</h3>
-            <p>Trouvez rapidement vos documents grâce à une recherche puissante.</p>
-       
+
+        <!-- Recherche avancée -->
+        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='{{ url_for('search_documents') }}'">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-search fa-3x mb-3 text-success"></i>
+                    <h3>Recherche avancée</h3>
+                    <p>Trouvez rapidement vos documents grâce à une recherche puissante.</p>
+                </div>
+            </div>
         </div>
-        <div class="col-md-4 text-center">
-            <i class="fas fa-upload fa-3x mb-3"></i>
-            <h3>Upload facile</h3>
-            <p>Ajoutez de nouveaux documents en quelques clics.</p>
+
+        <!-- Upload facile -->
+        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='{{ url_for('upload_file') }}'">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-upload fa-3x mb-3 text-warning"></i>
+                    <h3>Upload facile</h3>
+                    <p>Ajoutez de nouveaux documents en quelques clics.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Styles personnalisés -->
+<style>
+    .clickable-card {
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .clickable-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .fa-3x {
+        color: inherit; /* Utilise la couleur du texte parent */
+    }
+</style>
 {% endblock %}

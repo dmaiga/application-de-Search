@@ -104,11 +104,12 @@ register_document_routes
    upload
    download
    delete : un ou plusieur
+   view_document
 
 """
 
 
-def register_document_routes(app,db,es):
+def register_document_routes(app,db,es,UUID):
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limite à 16MB
     # Connexion à Elasticsearch
 
@@ -330,6 +331,24 @@ def register_document_routes(app,db,es):
             flash(f"Erreur lors de la suppression du document : {str(e)}", "danger")
             return redirect(url_for('documents'))
 
+    @app.route('/view_document/<string:doc_id>')
+    def view_document(doc_id):
+        try:
+            # Convertir la chaîne en UUID pour validation
+            doc_uuid = UUID(doc_id)
+        except ValueError:
+            return "Identifiant de document invalide", 400
+
+        # Convertir l'UUID en chaîne pour la requête SQL
+        doc_id_str = str(doc_uuid)
+
+        # Récupérer le document depuis la base de données
+        document = Document.query.filter_by(doc_id=doc_id_str).first()
+        if not document:
+            return "Document non trouvé", 404
+
+        # Envoyer le fichier pour affichage dans le navigateur
+        return send_file(document.file_path, as_attachment=False)
 
 
 """
@@ -421,44 +440,52 @@ def profiles_user(app,db,bcrypt):
             email = request.form.get('email')
             password = request.form.get('password')
             confirm_password = request.form.get('confirm_password')
-    
+            job_title = request.form.get('job_title')  # Poste occupé (facultatif)
+            department = request.form.get('department')  # Département (facultatif)
+            phone = request.form.get('phone')  # Téléphone (facultatif)
+            work_location = request.form.get('work_location')  # Adresse de l'entreprise (facultatif)
+
             # Validation des champs obligatoires
             if not all([first_name, last_name, username, email, password, confirm_password]):
-                flash("Tous les champs sont obligatoires.", 'error')
+                flash("Tous les champs obligatoires doivent être remplis.", 'error')
                 return redirect(url_for('auth'))
-    
+
             # Vérifier que les mots de passe correspondent
             if password != confirm_password:
                 flash("Les mots de passe ne correspondent pas.", 'error')
                 return redirect(url_for('auth'))
-    
+
             # Vérifier que l'email est valide
             if not is_email_valid(email):  # Utilisez la fonction is_email_valid
                 flash("L'adresse email n'est pas valide.", 'error')
                 return redirect(url_for('auth'))
-    
+
             # Vérifier que l'email ou le nom d'utilisateur n'existe pas déjà
             if User.query.filter((User.email == email) | (User.username == username)).first():
                 flash("Un compte avec cet email ou ce nom d'utilisateur existe déjà.", 'error')
                 return redirect(url_for('auth'))
-    
+
             # Hacher le mot de passe
             hash_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    
+
             # Créer un nouvel utilisateur
             user = User(
                 first_name=first_name,
                 last_name=last_name,
                 username=username,
                 email=email,
-                password=hash_password
+                password=hash_password,
+                job_title=job_title,  # Poste occupé (facultatif)
+                department=department,  # Département (facultatif)
+                phone=phone,  # Téléphone (facultatif)
+                work_location=work_location  # Adresse de l'entreprise (facultatif)
             )
             db.session.add(user)
             db.session.commit()
-    
+
             # Connecter l'utilisateur après l'inscription
             login_user(user)
-    
+
             # Rediriger vers la page d'accueil avec un message de succès
             flash("Inscription réussie !", 'success')
             return redirect(url_for('index'))

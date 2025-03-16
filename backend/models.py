@@ -13,28 +13,35 @@ class Role(Enum):
     ADMIN = 'admin'
     USER = 'user'
 
-class User(db.Model, UserMixin ):
+class User(db.Model, UserMixin):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(100), nullable=False)  
-    last_name = db.Column(db.String(100), nullable=False)
-    username = db.Column(db.String(100), unique=True, nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    role = db.Column(Enum('admin', 'user', name='role'), default='user')
+    last_name = db.Column(db.String(100), nullable=False)  
+    username = db.Column(db.String(100), unique=True, nullable=False)  
+    email = db.Column(db.String(150), unique=True, nullable=False)  
+    password = db.Column(db.Text, nullable=False)  
+    job_title = db.Column(db.String(100), nullable=True)  
+    department = db.Column(db.String(100), nullable=True)  
+    phone = db.Column(db.String(20), nullable=True)  
+    work_location = db.Column(db.String(200), nullable=True)  
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  
+    role = db.Column(Enum('admin', 'user', name='role'), default='user')  # Rôle (par défaut 'user')
 
     def hash_password(self):
+        """Hash le mot de passe avant de le stocker dans la base de données."""
         self.password = bcrypt.generate_password_hash(self.password).decode('utf-8')
 
     def check_password(self, password):
+        """Vérifie si le mot de passe fourni correspond au mot de passe hashé."""
         return bcrypt.check_password_hash(self.password, password)
-    
-    def __repr__ (self):
-        return f"Username :{self.username} and Role :{self.role}"
-    def get_id(self):
-        return self.id
 
+    def __repr__(self):
+        return f"Username: {self.username}, Role: {self.role}"
+
+    def get_id(self):
+        """Retourne l'ID de l'utilisateur (requis par Flask-Login)."""
+        return self.id
 
 
 class Document(db.Model):

@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
-
+from uuid import UUID
 from flask_jwt_extended import JWTManager, create_access_token,jwt_required, get_jwt_identity
 from models import db, User, Document
 import datetime
@@ -53,7 +53,7 @@ def create_app():
     
     # Upload and index_file route
     from routes import register_document_routes
-    register_document_routes(app, db,es)
+    register_document_routes(app, db,es,UUID)
 
     # gestion des users
     from routes import profiles_user

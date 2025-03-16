@@ -38,6 +38,18 @@
                             <strong>Email :</strong> {{ current_user.email }}
                         </li>
                         <li class="list-group-item">
+                            <strong>Poste occupé :</strong> {{ current_user.job_title or 'Non renseigné' }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Département :</strong> {{ current_user.department or 'Non renseigné' }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Téléphone :</strong> {{ current_user.phone or 'Non renseigné' }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Adresse de l'entreprise :</strong> {{ current_user.work_location or 'Non renseigné' }}
+                        </li>
+                        <li class="list-group-item">
                             <strong>Date d'inscription :</strong> {{ current_user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
                         </li>
                     </ul>
@@ -51,23 +63,55 @@
                 <div class="card-body">
                     <h3 class="card-title mb-4">Modifier le profil</h3>
                     <form action="{{ url_for('update_profile') }}" method="post" autocomplete="off">
+                        <!-- Nom d'utilisateur -->
                         <div class="mb-3">
                             <label for="username" class="form-label">Nom d'utilisateur</label>
                             <input type="text" class="form-control" id="username" name="username" value="{{ current_user.username }}" required>
                         </div>
-                        <div class="mb-3">
-                        <div class="mb-3">
-                            <label for="first_name" class="form-label">Prénom</label>
-                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ current_user.first_name }}" required>
+
+                        <!-- Prénom et Nom -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="first_name" class="form-label">Prénom</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ current_user.first_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="last_name" class="form-label">Nom</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ current_user.last_name }}" required>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="last_name" class="form-label">Nom</label>
-                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ current_user.last_name }}" required>
-                        </div>
+
+                        <!-- Email -->
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
                             <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
                         </div>
+
+                        <!-- Poste occupé et Département -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="job_title" class="form-label">Poste occupé</label>
+                                <input type="text" class="form-control" id="job_title" name="job_title" value="{{ current_user.job_title }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="department" class="form-label">Département</label>
+                                <input type="text" class="form-control" id="department" name="department" value="{{ current_user.department }}">
+                            </div>
+                        </div>
+
+                        <!-- Téléphone et Adresse de l'entreprise -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Téléphone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" value="{{ current_user.phone }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="work_location" class="form-label">Adresse de l'entreprise</label>
+                                <input type="text" class="form-control" id="work_location" name="work_location" value="{{ current_user.work_location }}">
+                            </div>
+                        </div>
+
+                        <!-- Bouton de mise à jour -->
                         <button type="submit" class="btn btn-primary">Mettre à jour</button>
                     </form>
 
