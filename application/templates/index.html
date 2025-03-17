@@ -1,0 +1,133 @@
+
+{% extends "base.html" %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Bienvenue, {{ current_user.first_name |capitalize }} {{ current_user.last_name | upper}} !</h1>
+    <p class="text-center lead mt-3">
+        Gérer vos documents n'a jamais été aussi simple. Explorez, recherchez et partagez vos fichiers en toute sécurité.
+    </p>
+
+    <!-- Sections cliquables -->
+    <div class="row mt-5">
+        <!-- Gestion des documents -->
+        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='/documents'">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-folder-open fa-3x mb-3 text-primary"></i>
+                    <h3>Gestion des documents</h3>
+                    <p>Organisez et gérez vos documents en toute simplicité.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recherche avancée -->
+        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='/search'">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-search fa-3x mb-3 text-success"></i>
+                    <h3>Recherche avancée</h3>
+                    <p>Trouvez rapidement vos documents grâce à une recherche puissante.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload facile -->
+        <div class="col-md-4 text-center clickable-card" onclick="window.location.href='/upload'">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-upload fa-3x mb-3 text-warning"></i>
+                    <h3>Upload facile</h3>
+                    <p>Ajoutez de nouveaux documents en quelques clics.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+/* Styles généraux */
+body {
+    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Animation pour les titres */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+h1, .lead {
+    animation: fadeIn 1s ease-out;
+}
+
+/* Styles pour la barre de navigation */
+.navbar {
+    background-color: #0d6efd !important;
+    padding: 0.5rem 1rem;
+}
+
+.navbar-brand, .nav-link {
+    color: #fff !important;
+}
+
+.nav-link:hover {
+    color: #f8f9fa !important;
+}
+
+.dropdown-menu {
+    background-color: #0d6efd !important;
+    border: none;
+}
+
+.dropdown-item {
+    color: #fff !important;
+}
+
+.dropdown-item:hover {
+    background-color: #0b5ed7 !important;
+}
+
+/* Styles pour les cartes cliquables */
+.clickable-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 1rem;
+}
+
+.clickable-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+    background-color: #fff;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.fa-3x {
+    color: inherit;
+}
+
+.card h3 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+}
+</style>
+{% endblock %}

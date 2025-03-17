@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block content %}
+<body>
+    <div class="container mt-5">
+        <h2>Résultats de la Recherche</h2>
+       
+    
+
+        <!-- Formulaire de recherche -->
+        <form action="{{ url_for('search_documents') }}" method="GET" class="mb-4" autocomplete="off">
+            <div class="row">
+                <div class="col-md-8">
+                    <input type="text" name="query" class="form-control" placeholder="Rechercher..." value="{{ request.args.get('query', '') }}" >
+                </div>
+                <div class="col-md-2">
+                    <select name="doc_format" class="form-control">
+                        <option value="" {% if not doc_format %}selected{% endif %}>Tous les formats</option>
+                        <option value="pdf" {% if doc_format == 'pdf' %}selected{% endif %}>PDF</option>
+                        <option value="docx" {% if doc_format == 'docx' %}selected{% endif %}>Word</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">Rechercher</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Liste des résultats -->
+        {% if results %}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Nom du Document</th>
+                        <th>Aperçu</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>{{ result.doc_name }}</td>
+                        <td>
+                            {% for fragment in result.highlight %}
+                                <p>{{ fragment | replace('<em>', '<em class="highlight">') | safe }}</p>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <!-- Bouton pour visualiser le document dans un nouvel onglet -->
+                            <a href="{{ url_for('view_document', doc_id=result.doc_id) }}" target="_blank" class="btn btn-info btn-sm">Voir</a>
+                            <!-- Bouton pour télécharger le document -->
+                            <a href="{{ url_for('download_document', doc_id=result.doc_id) }}" class="btn btn-primary btn-sm">Télécharger</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-info">Aucun résultat trouvé.</div>
+        {% endif %}
+    </div>
+</body>
+{% endblock %}
+</html>

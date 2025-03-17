@@ -1,0 +1,11 @@
+# Ignorer le fichier note_projet_ES.txt
+note_projet_ES.txt
+
+# Ignorer le fichier config.py dans le dossier application
+application/config.py
+
+# Ignorer le répertoire __pycache__
+__pycache__/
+
+# Environnements virtuels
+es_env/
