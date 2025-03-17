@@ -81,24 +81,31 @@ def register_routes(app, db,bcrypt,es):
             # Construction de la requête pour Elasticsearch
 
             search_body = {
-                "query": {
-                    "bool": {
-                        "must": [
-                            {"match": {"doc_content": query}}  # Recherche sur le contenu des documents
-                        ]
-                    }
-                },
-                "highlight": {
-                    "fields": {
-                        "doc_content": {
-                            "number_of_fragments": 5,  # Nombre maximum de fragments retournés
-                            "fragment_size": 150       # Taille maximale de chaque fragment
+                    "query": {
+                        "bool": {
+                            "must": [
+                                {
+                                    "multi_match": {
+                                        "query": query,
+                                        "fields": ["doc_content", "doc_name"],  # Recherche dans le contenu et le nom
+                                        "fuzziness": "AUTO",  # Recherche floue automatique
+                                        "operator": "and"  # Tous les termes doivent correspondre
+                                    }
+                                }
+                            ]
                         }
-                    }
-                },
-                "from": (page - 1) * per_page,
-                "size": per_page
-            }
+                    },
+                    "highlight": {
+                        "fields": {
+                            "doc_content": {
+                                "number_of_fragments": 5,  # Nombre maximum de fragments retournés
+                                "fragment_size": 150  # Taille maximale de chaque fragment
+                            }
+                        }
+                    },
+                    "from": (page - 1) * per_page,
+                    "size": per_page
+                }
 
             # Ajout d'un filtre sur le format du document si spécifié
             if doc_format:
