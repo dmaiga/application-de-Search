@@ -41,9 +41,31 @@ Ce projet permet de rechercher des documents en texte intégral à l'aide d'Elas
 
 ## Prérequis
 
-- Python 3.8 ou supérieur
-- Elasticsearch 7.x ou supérieur
-- Pip (gestionnaire de paquets Python)
+alembic
+altair
+bcrypt
+elasticsearch
+Flask
+Flask-Bcrypt
+
+Flask-Login
+Flask-Migrate
+Flask-SQLAlchemy
+GitPython
+
+lxml
+numpy
+pandas
+pdfminer.six
+pillow
+psycopg2-binary
+pyarrow
+python-docx
+requests
+SQLAlchemy
+
+
+
 
 ### Installation des dépendances
 
